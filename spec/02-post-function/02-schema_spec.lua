@@ -25,14 +25,14 @@ describe("post-function schema", function()
       local ok, err = v({ functions = { mock_fn_invalid } }, post_schema)
 
       assert.falsy(ok)
-      assert.equals("Error parsing post-function: [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions)
+      assert.equals("Error parsing post-function: [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions[1])
     end)
 
     it("with a valid and invalid function", function()
       local ok, err = v({ functions = { mock_fn_one, mock_fn_invalid } }, post_schema)
 
       assert.falsy(ok)
-      assert.equals("Error parsing post-function: [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions)
+      assert.equals("Error parsing post-function: [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions[2])
     end)
   end)
 end)
