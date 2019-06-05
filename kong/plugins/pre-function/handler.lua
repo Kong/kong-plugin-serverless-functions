@@ -1,22 +1,23 @@
-local BasePlugin = require "kong.plugins.base_plugin"
-local PreFunction = BasePlugin:extend()
+local loadstring = loadstring
+local insert = table.insert
+local ipairs = ipairs
+
 
 local config_cache = setmetatable({}, { __mode = "k" })
 
 
-function PreFunction:new()
-  PreFunction.super.new(self, "pre-function")
-end
+local PreFunction = {
+  VERSION  = "0.1.0",
+  PRIORITY = math.huge,
+}
 
 
 function PreFunction:access(config)
-  PreFunction.super.access(self)
-
   local functions = config_cache[config]
   if not functions then
     functions = {}
     for _, fn_str in ipairs(config.functions) do
-      table.insert(functions, loadstring(fn_str))
+      insert(functions, loadstring(fn_str))
     end
     config_cache[config] = functions
   end
@@ -25,10 +26,6 @@ function PreFunction:access(config)
     fn()
   end
 end
-
-
-PreFunction.VERSION = "0.1.0"
-PreFunction.PRIORITY = math.huge
 
 
 return PreFunction

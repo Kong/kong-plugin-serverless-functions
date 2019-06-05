@@ -1,6 +1,9 @@
 local typedefs = require "kong.db.schema.typedefs"
 
 
+local loadstring = loadstring
+
+
 local function validate_function(fun)
   local _, err = loadstring(fun)
   if err then
