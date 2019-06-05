@@ -1,5 +1,9 @@
 # Changelog; Kong Serverless Functions Plugin
 
+## 0.3.0
+
+- Remove BasePlugin inheritance (not needed anymore)
+
 ## 0.2.0
 
 - Updated schemas to new format
