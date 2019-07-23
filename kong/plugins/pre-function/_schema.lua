@@ -33,13 +33,36 @@ return function(plugin_name)
     name = plugin_name,
     fields = {
       { consumer = typedefs.no_consumer },
-      { config = {
+      { 
+        config = {
           type = "record",
           fields = {
-            { functions = {
-                required = true, type = "array",
-                elements = { type = "string", custom_validator = validate_function },
-            }, },
+            {
+              phase = {
+                required = false,
+                type = "string",
+                default = "access",
+                one_of = {
+                  "init_worker",
+                  "certificate",
+                  "rewrite",
+                  "access",
+                  "header_filter",
+                  "body_filter",
+                  "log"
+                },
+              },
+            },
+            {
+              functions = {
+                required = true, 
+                type = "array",
+                elements = { 
+                  type = "string", 
+                  custom_validator = validate_function 
+                },
+              },
+            },
           },
         },
       },
