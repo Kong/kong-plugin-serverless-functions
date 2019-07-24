@@ -64,6 +64,7 @@ return function(plugin_name, priority)
   end
 
   function ServerlessFunction:header_filter(config)
+    ngx.header["content-length"] = nil
     invoke("header_filter", config)
   end
 
