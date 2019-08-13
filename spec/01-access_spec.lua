@@ -36,13 +36,14 @@ local mock_fn_six = [[
 
 local mock_fn_seven = [[
   local utils = require "pl.utils"
-
   ngx.req.read_body()
-  filename = ngx.req.get_body_data()
 
-  local count = tonumber(utils.readfile(filename) or 0)
+  local count = tonumber(ngx.req.get_body_data())
   count = count + 1
-  utils.writefile(filename, tostring(count))
+
+  ngx.status = 200
+  ngx.say(count)
+  ngx.exit(ngx.status)
 ]]
 
 -- same as 7, but with upvalue format
@@ -259,80 +260,69 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
     end)
 
     describe("invocation count", function()
-
-      local filename
-
-      local get_count = function()
-        return tonumber(require("pl.utils").readfile(filename))
-      end
-
-      before_each(function()
-        filename = helpers.test_conf.prefix .. "/test_count"
-        assert(require("pl.utils").writefile(filename, "0"))
-      end)
-
-      after_each(function()
-        os.remove(filename)
-      end)
-
       it("once on initialization", function()
+        local count = 0
         local res = assert(client:send {
           method = "POST",
           path = "/status/200",
           headers = {
             ["Host"] = "seven." .. plugin_name .. ".com",
-            ["Content-Length"] = #filename
+            ["Content-Length"] = #tostring(count),
           },
-          body = filename,
+          body = count,
         })
-        assert.equal(1, get_count())
+        assert.equal(1, tonumber(res:read_body()))
       end)
 
       it("on repeated calls", function()
+        local count = 0
+
         for i = 1, 10 do
           local res = assert(client:send {
             method = "POST",
             path = "/status/200",
             headers = {
               ["Host"] = "seven." .. plugin_name .. ".com",
-              ["Content-Length"] = #filename
+              ["Content-Length"] = #tostring(count),
             },
-            body = filename,
+            body = count,
           })
-          res:read_body()
+          count = tonumber(res:read_body())
         end
 
-        assert.equal(10, get_count())
+        assert.equal(10, count)
       end)
 
       it("once on initialization, with upvalues", function()
+        local count = 0
         local res = assert(client:send {
           method = "POST",
           path = "/status/200",
           headers = {
             ["Host"] = "eight." .. plugin_name .. ".com",
-            ["Content-Length"] = #filename
+            ["Content-Length"] = #tostring(count),
           },
-          body = filename,
+          body = count,
         })
-        assert.equal(1, get_count())
+        assert.equal(1, tonumber(res:read_body()))
       end)
 
       it("on repeated calls, with upvalues", function()
+        local count = 0
         for i = 1, 10 do
           local res = assert(client:send {
             method = "POST",
             path = "/status/200",
             headers = {
               ["Host"] = "eight." .. plugin_name .. ".com",
-              ["Content-Length"] = #filename
+              ["Content-Length"] = #tostring(count),
             },
-            body = filename,
+            body = count,
           })
-          res:read_body()
+          count = tonumber(res:read_body())
         end
 
-        assert.equal(10, get_count())
+        assert.equal(10, count)
       end)
 
 
