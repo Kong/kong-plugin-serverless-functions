@@ -47,8 +47,8 @@ return function(plugin_name, priority)
     ServerlessFunction.super.new(self, "ServerlessFunction:" .. plugin_name)
   end
 
-  function ServerlessFunction:init_worker(config)
-    invoke("init_worker", config)
+  function ServerlessFunction:init_worker()
+    invoke("init_worker")
   end
   
   function ServerlessFunction:certificate(config)
