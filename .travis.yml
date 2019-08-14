@@ -26,39 +26,35 @@ services:
 
 env:
   global:
-    - LUAROCKS=2.4.3
-    - OPENSSL=1.0.2n
+    - LUAROCKS=3.0.4
+    - OPENSSL=1.1.1a
+    - KONG_REPOSITORY=kong-ee
+    - KONG_LATEST=master
     - CASSANDRA_BASE=2.2.12
     - CASSANDRA_LATEST=3.9
-    - OPENRESTY_BASE=1.13.6.2
     - OPENRESTY_LATEST=1.13.6.2
     - DOWNLOAD_CACHE=$HOME/download-cache
     - INSTALL_CACHE=$HOME/install-cache
     - BUSTED_ARGS="-o gtest -v --exclude-tags=flaky,ipv6"
-    - PLUGIN_NAME=pre-function,post-function
-    - KONG_TEST_CUSTOM_PLUGINS=$PLUGIN_NAME
-    - KONG_CUSTOM_PLUGINS=$PLUGIN_NAME
+    - TEST_FILE_PATH=$TRAVIS_BUILD_DIR/spec
+    - KONG_PLUGINS=bundled,pre-function,post-function
+    - KONG_TEST_PLUGINS=$KONG_PLUGINS
 
   matrix:
-    - OPENRESTY=$OPENRESTY_BASE
+    - OPENRESTY=$OPENRESTY_LATEST
       CASSANDRA=$CASSANDRA_BASE
+      KONG_TAG=$KONG_LATEST
     - OPENRESTY=$OPENRESTY_LATEST
       CASSANDRA=$CASSANDRA_LATEST
-
-before_install:
-  - git clone https://$GITHUB_TOKEN:@github.com/Kong/kong-ci.git
-  - source kong-ci/setup_env.sh
-  - git clone --single-branch -b next https://github.com/Kong/kong.git kong-ce
+      KONG_TAG=$KONG_LATEST
 
 install:
-  - luarocks make
-  - cd kong-ce
-  - make dev
-  - createuser --createdb kong
-  - createdb -U kong kong_tests
+  - git clone --single-branch https://github.com/Kong/kong-ci ../kong-ci
+  - source ../kong-ci/setup_plugin_env.sh
 
 script:
-  - bin/busted $BUSTED_ARGS ../spec
+  - eval $LUACHECK_CMD
+  - eval $BUSTED_CMD
 
 cache:
   apt: true
