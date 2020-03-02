@@ -28,10 +28,15 @@ local phase_field = { required = false, type = "string", custom_validator = vali
 return {
   name = "nless",
   fields = {
-    { config = {
+    {
+      config = {
       type = "record",
       fields = {
         { access = phase_field },
+        {certificates = phase_field},
+        {header_filter = phase_field},
+        {body_filter = phase_field},
+        {log = phase_field}
       }
     }
   } }
