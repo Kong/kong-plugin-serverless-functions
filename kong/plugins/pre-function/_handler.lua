@@ -13,6 +13,7 @@ return function(plugin_name, priority)
 
   function invoke(phase, config)
     if (config.phase ~= phase) then
+    if not config or (config.phase ~= phase and not config[phase]) then
       return
     end
 
@@ -34,14 +35,21 @@ return function(plugin_name, priority)
           func2()
         end
       end
-
       config_cache[config] = functions
-      return  -- must return since we allready executed them
+    else
+      for _, fn in ipairs(functions) do
+        fn()
+      end
     end
 
-    for _, fn in ipairs(functions) do
-      fn()
+    if config[phase] then
+      local fn_str = config[phase]
+      local fn = load(fn_str, plugin_name, "t", _G)
+      local _, actual_fn = pcall(fn)
+
+      actual_fn(config)
     end
+
   end
 
   function ServerlessFunction:new()

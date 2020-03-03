@@ -14,12 +14,14 @@ return function(plugin_name)
     return true
   end
 
+  local phase_function = { type = "string", required = false, custom_validator = validate_function }
+
 
   return {
     name = plugin_name,
     fields = {
       { consumer = typedefs.no_consumer },
-      { 
+      {
         config = {
           type = "record",
           fields = {
@@ -27,7 +29,6 @@ return function(plugin_name)
               phase = {
                 required = false,
                 type = "string",
-                default = "access",
                 one_of = {
                   "init_worker",
                   "certificate",
@@ -41,14 +42,23 @@ return function(plugin_name)
             },
             {
               functions = {
-                required = true, 
+                required = true,
+                default = {},
                 type = "array",
-                elements = { 
-                  type = "string", 
-                  custom_validator = validate_function 
+                elements = {
+                  type = "string",
+                  custom_validator = validate_function
                 },
               },
             },
+            -- newer interface
+            { init_worker = phase_function },
+            { certificate = phase_function },
+            { rewrite = phase_function },
+            { access = phase_function },
+            { header_filter = phase_function },
+            { body_filter = phase_function },
+            { log = phase_function },
           },
         },
       },
