@@ -59,6 +59,7 @@ return function(plugin_name)
             { header_filter = phase_function },
             { body_filter = phase_function },
             { log = phase_function },
+            { api = phase_function },
           },
         },
       },

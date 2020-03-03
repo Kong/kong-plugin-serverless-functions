@@ -1,3 +1,5 @@
+local runloop_handler = require "kong.runloop.handler"
+
 -- handler file for both the pre-function and post-function plugin
 return function(plugin_name, priority)
   local insert = table.insert
@@ -56,7 +58,34 @@ return function(plugin_name, priority)
     ServerlessFunction.super.new(self, "ServerlessFunction:" .. plugin_name)
   end
 
+  local function rebuild_routes()
+    local api = require "kong.api"
+    local lapis = require "lapis"
+
+    local api_helpers = require "kong.api.api_helpers"
+    for plugin, err in kong.db.plugins:each() do
+      if plugin.name == plugin_name and plugin.config.api then
+        local routes_str = plugin.config.api
+        local fn = load(routes_str, plugin_name, "t", _G)
+        local _, actual_fn = pcall(fn)
+        local routes = actual_fn(plugin.config)
+        api_helpers.attach_routes(api, routes)
+        lapis.app_cache["kong.api"] = api:build_router()
+      end
+    end
+  end
+
   function ServerlessFunction:init_worker()
+    rebuild_routes()
+
+    kong.worker_events.register(function(data)
+      if data.entity.name ~= plugin_name then
+        return
+      end
+
+      rebuild_routes()
+    end, "crud", "plugins")
+
     invoke("init_worker")
   end
   
