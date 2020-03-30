@@ -6,7 +6,7 @@ return function(plugin_name)
 
 
   local function validate_function(fun)
-    local func1, err = loadstring(fun)
+    local _, err = loadstring(fun)
     if err then
       return false, "error parsing " .. plugin_name .. ": " .. err
     end
@@ -15,19 +15,33 @@ return function(plugin_name)
   end
 
 
+  local phase_function = {
+    type = "string",
+    required = false,
+    custom_validator = validate_function
+  }
+
+  local phase_functions = {
+    required = true,
+    default = {},
+    type = "array",
+    elements = phase_function
+  }
+
   return {
     name = plugin_name,
     fields = {
       { consumer = typedefs.no_consumer },
-      { 
+      {
         config = {
           type = "record",
           fields = {
+            -- old interface
             {
               phase = {
                 required = false,
-                type = "string",
                 default = "access",
+                type = "string",
                 one_of = {
                   "init_worker",
                   "certificate",
@@ -39,16 +53,15 @@ return function(plugin_name)
                 },
               },
             },
-            {
-              functions = {
-                required = true, 
-                type = "array",
-                elements = { 
-                  type = "string", 
-                  custom_validator = validate_function 
-                },
-              },
-            },
+            { functions = phase_functions },
+            -- new interface
+            { init_worker = phase_functions },
+            { certificate = phase_functions },
+            { rewrite = phase_functions },
+            { access = phase_functions },
+            { header_filter = phase_functions },
+            { body_filter = phase_functions },
+            { log = phase_functions },
           },
         },
       },

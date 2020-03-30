@@ -6,10 +6,27 @@ local mock_fn_three = 'local x = 1 return function() x = x + 1 end'
 local mock_fn_invalid = 'print('
 local mock_fn_invalid_return = 'return "hello-world"'
 
+
+for _, method in ipairs({ "phase+functions", "phase=functions"}) do
+  local function get_conf(functions)
+    if method == "phase+functions" then
+      return { functions = functions }
+    elseif method == "phase=functions" then
+      return { access = functions }
+    end
+  end
+
+  local function get_functions_from_error(err)
+    if method == "phase+functions" then
+      return err.config.functions
+    elseif method == "phase=functions" then
+      return err.config.access
+    end
+  end
+
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
-  describe(plugin_name .. " schema", function()
-
+  describe("Plugin: " .. plugin_name .. string.format(" (by %s)", method) .. " schema", function()
     local schema
 
     setup(function()
@@ -17,17 +34,15 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
     end)
 
     it("validates single function", function()
-      local ok, err = v({ functions = { mock_fn_one } }, schema)
+      local ok, err = v(get_conf { mock_fn_one }, schema)
 
       assert.truthy(ok)
       assert.falsy(err)
     end)
 
     it("error in function is not triggered during validation", function()
-      local ok, err = v({
-        functions = {
+      local ok, err = v(get_conf {
           [[error("should never happen")]],
-        }
       }, schema)
 
       assert.truthy(ok)
@@ -35,21 +50,21 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
     end)
 
     it("validates single function with upvalues", function()
-      local ok, err = v({ functions = { mock_fn_three } }, schema)
+      local ok, err = v(get_conf{ mock_fn_three }, schema)
 
       assert.truthy(ok)
       assert.falsy(err)
     end)
 
     it("validates multiple functions", function()
-      local ok, err = v({ functions = { mock_fn_one, mock_fn_two } }, schema)
+      local ok, err = v(get_conf { mock_fn_one, mock_fn_two }, schema)
 
       assert.truthy(ok)
       assert.falsy(err)
     end)
 
     it("a valid chunk with an invalid return type", function()
-      local ok, err = v({ functions = { mock_fn_invalid_return } }, schema)
+      local ok, err = v(get_conf { mock_fn_invalid_return }, schema)
 
       assert.truthy(ok)
       assert.falsy(err)
@@ -57,19 +72,19 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
     describe("errors", function()
       it("with an invalid function", function()
-        local ok, err = v({ functions = { mock_fn_invalid } }, schema)
+        local ok, err = v(get_conf { mock_fn_invalid }, schema)
 
         assert.falsy(ok)
-        assert.equals("error parsing " .. plugin_name .. ": [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions[1])
+        assert.equals("error parsing " .. plugin_name .. ": [string \"print(\"]:1: unexpected symbol near '<eof>'", get_functions_from_error(err)[1])
       end)
 
       it("with a valid and invalid function", function()
-        local ok, err = v({ functions = { mock_fn_one, mock_fn_invalid } }, schema)
+        local ok, err = v(get_conf { mock_fn_one, mock_fn_invalid }, schema)
 
         assert.falsy(ok)
-        assert.equals("error parsing " .. plugin_name .. ": [string \"print(\"]:1: unexpected symbol near '<eof>'", err.config.functions[2])
+        assert.equals("error parsing " .. plugin_name .. ": [string \"print(\"]:1: unexpected symbol near '<eof>'", get_functions_from_error(err)[2])
       end)
     end)
   end)
-
+end
 end

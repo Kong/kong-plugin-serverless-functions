@@ -61,9 +61,18 @@ end)
 
 
 
+for _, method in ipairs({ "phase+functions", "phase=functions"}) do
+  local function get_conf(functions)
+    if method == "phase+functions" then
+      return { functions = functions }
+    elseif method == "phase=functions" then
+      return { access = functions }
+    end
+  end
+
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
-  describe("Plugin: " .. plugin_name .. " (access)", function()
+  describe("Plugin: " .. plugin_name .. string.format(" (by %s)", method) .. " access", function()
     local client, admin_client
 
     setup(function()
@@ -115,57 +124,43 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route1.id },
-        config  = {
-          functions = { mock_fn_one }
-        },
+        config  = get_conf { mock_fn_one },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route2.id },
-        config  = {
-          functions = { mock_fn_two }
-        },
+        config  = get_conf { mock_fn_two },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route3.id },
-        config  = {
-          functions = { mock_fn_three }
-        },
+        config  = get_conf { mock_fn_three },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route4.id },
-        config  = {
-          functions = { mock_fn_four, mock_fn_five }
-        },
+        config  = get_conf { mock_fn_four, mock_fn_five },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route6.id },
-        config  = {
-          functions = { mock_fn_six }
-        },
+        config  = get_conf { mock_fn_six },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route7.id },
-        config  = {
-          functions = { mock_fn_seven }
-        },
+        config  = get_conf { mock_fn_seven },
       }
 
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route8.id },
-        config  = {
-          functions = { mock_fn_eight }
-        },
+        config  = get_conf { mock_fn_eight },
       }
 
       assert(helpers.start_kong({
@@ -328,5 +323,5 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
     end)
   end)
-
+end
 end

@@ -1,43 +1,70 @@
 -- handler file for both the pre-function and post-function plugin
 return function(plugin_name, priority)
   local insert = table.insert
-  
 
   local config_cache = setmetatable({}, { __mode = "k" })
-  local ServerlessFunction = {}
 
   local ServerlessFunction = {
     PRIORITY = priority,
     VERSION = "0.3.1",
   }
 
-  function invoke(phase, config)
-    if (config.phase ~= phase) then
+  -- !!! Note thins function also executes fn_str !!!
+  -- If we support both old style (0.1.0) and new style (0.2.0+), this
+  -- early execution is mandatory, since it's our check for it.
+  local function load_function(fn_str)
+    local func1 = loadstring(fn_str)    -- load it
+    local _, func2 = pcall(func1)       -- run it
+    if type(func2) ~= "function" then
+      -- old style (0.1.0), without upvalues
+      return func1
+    else
+      -- this is a new function (0.2.0+), with upvalues
+      -- the first call to func1 above only initialized it, so run again
+      func2()
+      return func2
+    end
+  end
+
+  local function invoke(phase, config)
+    if not config then
       return
     end
 
-    local functions = config_cache[config]
-    if not functions then
-      -- first call, go compile the functions
-      functions = {}
-      for _, fn_str in ipairs(config.functions) do
-        local func1 = loadstring(fn_str)    -- load it
-        local _, func2 = pcall(func1)       -- run it
-        if type(func2) ~= "function" then
-          -- old style (0.1.0), without upvalues
-          insert(functions, func1)
-        else
-          -- this is a new function (0.2.0+), with upvalues
-          insert(functions, func2)
+    local cache = config_cache[config] or {}
 
-          -- the first call to func1 above only initialized it, so run again
-          func2()
+    -- old style phase support. config.functions apply to config.phase
+    if config.phase == phase then
+      if #config.functions > 0 and not cache.functions then
+        cache.functions = {}
+        for _, fn_str in ipairs(config.functions) do
+          insert(cache.functions, load_function(fn_str))
         end
+
+        config_cache[config] = cache
+
+        return  -- must return since we already executed them
+      end
+    end
+
+    -- new style phase support: config.access = { some, functions }
+    if #config[phase] > 0 and not cache[phase] then
+      cache[phase] = {}
+      for _, fn_str in ipairs(config[phase]) do
+        insert(cache[phase], load_function(fn_str))
       end
 
-      config_cache[config] = functions
-      return  -- must return since we allready executed them
+      config_cache[config] = cache
+
+      return  -- must return since we already executed them
     end
+
+    -- XXX Should we support both ?
+    local functions = (
+      config.phase == phase and #config.functions > 0 and cache.functions
+    ) or (
+      #config[phase] > 0 and cache[phase]
+    ) or {}
 
     for _, fn in ipairs(functions) do
       fn()
@@ -51,11 +78,11 @@ return function(plugin_name, priority)
   function ServerlessFunction:init_worker()
     invoke("init_worker")
   end
-  
+
   function ServerlessFunction:certificate(config)
     invoke("certificate", config)
   end
-  
+
   function ServerlessFunction:rewrite(config)
     invoke("rewrite", config)
   end
