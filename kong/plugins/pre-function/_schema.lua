@@ -55,7 +55,6 @@ return function(plugin_name)
             },
             { functions = phase_functions },
             -- new interface
-            { init_worker = phase_functions },
             { certificate = phase_functions },
             { rewrite = phase_functions },
             { access = phase_functions },
