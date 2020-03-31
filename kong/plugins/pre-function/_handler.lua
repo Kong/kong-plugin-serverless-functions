@@ -9,7 +9,7 @@ return function(plugin_name, priority)
     VERSION = "0.3.1",
   }
 
-  -- !!! Note thins function also executes fn_str !!!
+  -- !!! Note this function also executes fn_str !!!
   -- If we support both old style (0.1.0) and new style (0.2.0+), this
   -- early execution is mandatory, since it's our check for it.
   local function load_function(fn_str)
@@ -33,46 +33,32 @@ return function(plugin_name, priority)
 
     local cache = config_cache[config] or {}
 
-    -- old style phase support. config.functions apply to config.phase
-    if config.phase == phase then
-      if #config.functions > 0 and not cache.functions then
-        cache.functions = {}
-        for _, fn_str in ipairs(config.functions) do
-          insert(cache.functions, load_function(fn_str))
-        end
-
-        config_cache[config] = cache
-
-        return  -- must return since we already executed them
-      end
-    end
-
-    -- new style phase support: config.access = { some, functions }
-    if #config[phase] > 0 and not cache[phase] then
-      cache[phase] = {}
-      for _, fn_str in ipairs(config[phase]) do
-        insert(cache[phase], load_function(fn_str))
+    if cache[phase] then
+      for _, fn in ipairs(cache[phase]) do
+        fn()
       end
 
-      config_cache[config] = cache
-
-      return  -- must return since we already executed them
+      return
     end
 
-    -- XXX Should we support both ?
-    local functions = (
-      config.phase == phase and #config.functions > 0 and cache.functions
-    ) or (
-      #config[phase] > 0 and cache[phase]
-    ) or {}
+    local functions
 
-    for _, fn in ipairs(functions) do
-      fn()
+    -- (0.3.1) config.functions apply to access phase only
+    if phase == "access" and #config.functions > 0 and #config.access == 0 then
+      functions = config.functions
+    -- (0.3.2+) phase support: config.access = { some, functions }
+    elseif #config[phase] > 0 then
+      functions = config[phase]
+    else
+      return
     end
-  end
 
-  function ServerlessFunction:new()
-    ServerlessFunction.super.new(self, "ServerlessFunction:" .. plugin_name)
+    cache[phase] = {}
+    for _, fn_str in ipairs(functions) do
+      insert(cache[phase], load_function(fn_str))
+    end
+
+    config_cache[config] = cache
   end
 
   function ServerlessFunction:certificate(config)

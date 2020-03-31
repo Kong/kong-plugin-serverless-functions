@@ -7,9 +7,11 @@ local mock_fn_invalid = 'print('
 local mock_fn_invalid_return = 'return "hello-world"'
 
 
-for _, method in ipairs({ "phase+functions", "phase=functions"}) do
+for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
+
+for _, method in ipairs({ "functions", "phase=functions"}) do
   local function get_conf(functions)
-    if method == "phase+functions" then
+    if method == "functions" then
       return { functions = functions }
     elseif method == "phase=functions" then
       return { access = functions }
@@ -17,20 +19,25 @@ for _, method in ipairs({ "phase+functions", "phase=functions"}) do
   end
 
   local function get_functions_from_error(err)
-    if method == "phase+functions" then
+    if method == "functions" then
       return err.config.functions
     elseif method == "phase=functions" then
       return err.config.access
     end
   end
 
-for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
   describe("Plugin: " .. plugin_name .. string.format(" (by %s)", method) .. " schema", function()
     local schema
 
     setup(function()
       schema = require("kong.plugins." .. plugin_name .. ".schema")
+
+      spy.on(kong.log, "warn")
+    end)
+
+    teardown(function()
+      kong.log.warn:revert()
     end)
 
     it("validates single function", function()
@@ -69,6 +76,14 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       assert.truthy(ok)
       assert.falsy(err)
     end)
+
+
+    if method == "functions" then
+      it("throws a log warning when being used", function()
+        v(get_conf { mock_fn_one, mock_fn_two }, schema)
+        assert.spy(kong.log.warn).was_called.with(string.format("[%s] 'config.functions' will be deprecated in favour of 'config.access'", plugin_name))
+      end)
+    end
 
     describe("errors", function()
       it("with an invalid function", function()

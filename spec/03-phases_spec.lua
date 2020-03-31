@@ -5,18 +5,9 @@ local mock_one_fn = [[
 ]]
 
 
-for _, method in ipairs({ "phase+functions", "phase=functions"}) do
-  local function get_conf(phase, functions)
-    if method == "phase+functions" then
-      return { phase = phase, functions = functions }
-    elseif method == "phase=functions" then
-      return { [phase] = functions }
-    end
-  end
-
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
-  describe("Plugin: " .. plugin_name .. string.format(" (by %s)", method) .. " header_filter", function()
+  describe("Plugin: " .. plugin_name .. " header_filter", function()
     local client, admin_client
 
     setup(function()
@@ -38,7 +29,7 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       bp.plugins:insert {
         name    = plugin_name,
         route   = { id = route.id },
-        config  = get_conf("header_filter", { mock_one_fn }),
+        config  = { header_filter = { mock_one_fn } },
       }
 
       assert(helpers.start_kong({
@@ -78,5 +69,4 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       end)
     end)
   end)
-end
 end
