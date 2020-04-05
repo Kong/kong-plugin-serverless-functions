@@ -1,88 +1,131 @@
 -- handler file for both the pre-function and post-function plugin
-return function(plugin_name, priority)
-  local insert = table.insert
 
-  local config_cache = setmetatable({}, { __mode = "k" })
+
+local config_cache do
+
+
+  local no_op = function() end
+
+
+  -- compiles the array for a phase into a single function
+  local function compile_phase_array(phase_funcs)
+    if not phase_funcs or #phase_funcs == 0 then
+      -- nothing to do for this phase
+      return no_op
+    else
+      -- compile the functions we got
+      local compiled = {}
+      for i, func_string in ipairs(phase_funcs) do
+        local func = loadstring(func_string)
+
+        local first_run_complete = false
+        compiled[i] = function()
+          -- this is a temporary closure, that will replace itself
+          if not first_run_complete then
+            first_run_complete = true
+            local result = func() --> this might call ngx.exit()
+
+            -- if we ever get here, then there was NO early exit from a 0.1.0
+            -- type config
+            if type(result) == "function" then
+              -- this is a new function (0.2.0+), with upvalues
+              -- the first call to func above only initialized it, so run again
+              func = result
+              compiled[i] = func
+              func() --> this again, may do an early exit
+            end
+
+            -- if we ever get here, then there was no early exit from either
+            -- 0.1.0 or 0.2.0+ code
+            -- Replace the entry of this closure in the array with the actual
+            -- function, since the closure is no longer needed.
+            compiled[i] = func
+
+          else
+            -- first run is marked as complete, but we (this temporary closure)
+            -- are being called again. So we are here only if the initial
+            -- function call did an early exit.
+            -- So replace this closure now;
+            compiled[i] = func
+            -- And call it again, for this 2nd run;
+            func()
+          end
+          -- unreachable
+        end
+      end
+
+      -- now return a function that executes the entire array
+      return function()
+        for _, f in ipairs(compiled) do f() end
+      end
+    end
+  end
+
+
+  local phases = { "certificate", "rewrite", "access",
+                   "header_filter", "body_filter", "log",
+                   "functions" } -- <-- this one being legacy
+
+
+  config_cache = setmetatable({}, {
+    __mode = "k",
+    __index = function(self, config)
+      -- config was not found yet, so go and compile our config functions
+      local runtime_funcs = {}
+      for _, phase in ipairs(phases) do
+        local func = compile_phase_array(config[phase])
+
+        if phase == "functions" then
+          if func == no_op then
+            func = nil -- do not set a "functions" key, since we won't run it anyway
+          else
+            -- functions, which is legacy is specified, so inject as "access". The
+            -- schema already prevents "access" and "functions" to co-exist, so
+            -- this should be safe.
+            phase = "access"
+          end
+        end
+
+        runtime_funcs[phase] = func
+      end
+      -- store compiled results in cache, and return them
+      self[config] = runtime_funcs
+      return runtime_funcs
+    end
+  })
+end
+
+
+
+return function(priority)
 
   local ServerlessFunction = {
     PRIORITY = priority,
     VERSION = "0.3.1",
   }
 
-  -- !!! Note this function also executes fn_str !!!
-  -- If we support both old style (0.1.0) and new style (0.2.0+), this
-  -- early execution is mandatory, since it's our check for it.
-  local function load_function(fn_str)
-    local func1 = loadstring(fn_str)    -- load it
-    local _, func2 = pcall(func1)       -- run it
-    if type(func2) ~= "function" then
-      -- old style (0.1.0), without upvalues
-      return func1
-    else
-      -- this is a new function (0.2.0+), with upvalues
-      -- the first call to func1 above only initialized it, so run again
-      func2()
-      return func2
-    end
-  end
-
-  local function invoke(phase, config)
-    if not config then
-      return
-    end
-
-    local cache = config_cache[config] or {}
-
-    if cache[phase] then
-      for _, fn in ipairs(cache[phase]) do
-        fn()
-      end
-
-      return
-    end
-
-    local functions
-
-    -- (0.3.1) config.functions apply to access phase only
-    if phase == "access" and #config.functions > 0 and #config.access == 0 then
-      functions = config.functions
-    -- (0.3.2+) phase support: config.access = { some, functions }
-    elseif #config[phase] > 0 then
-      functions = config[phase]
-    else
-      return
-    end
-
-    cache[phase] = {}
-    for _, fn_str in ipairs(functions) do
-      insert(cache[phase], load_function(fn_str))
-    end
-
-    config_cache[config] = cache
-  end
-
   function ServerlessFunction:certificate(config)
-    invoke("certificate", config)
+    config_cache[config].certificate()
   end
 
   function ServerlessFunction:rewrite(config)
-    invoke("rewrite", config)
+    config_cache[config].rewrite()
   end
 
   function ServerlessFunction:access(config)
-    invoke("access", config)
+    config_cache[config].access()
   end
 
   function ServerlessFunction:header_filter(config)
-    invoke("header_filter", config)
+    config_cache[config].header_filter()
   end
 
   function ServerlessFunction:body_filter(config)
-    invoke("body_filter", config)
+    config_cache[config].body_filter()
   end
 
   function ServerlessFunction:log(config)
-    invoke("log", config)
+    config_cache[config].log()
   end
 
 
