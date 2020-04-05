@@ -211,8 +211,9 @@ for _, method in ipairs({ "functions", "phase=functions"}) do
 
           local body = assert.res_status(200, res)
           assert.is_string(body)
+          --print(body)
           assert.is_nil(results[body])
-          results[body] = nil
+          results[body] = true
         end
       end)
 
