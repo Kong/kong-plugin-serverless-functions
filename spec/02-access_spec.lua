@@ -26,7 +26,9 @@ local mock_fn_five = [[
 
 local mock_fn_six = [[
   local count = 0
+  ngx.log(ngx.ERR, "mock_fn_six: initialization ran")
   return function()
+      ngx.log(ngx.ERR, "mock_fn_six: function ran")
       count = count + 1
       ngx.status = 200
       ngx.say(ngx.worker.pid() * 1000 + count)
@@ -211,7 +213,7 @@ for _, method in ipairs({ "functions", "phase=functions"}) do
 
           local body = assert.res_status(200, res)
           assert.is_string(body)
-          --print(body)
+          --print(i, ": ", body)
           assert.is_nil(results[body])
           results[body] = true
         end
