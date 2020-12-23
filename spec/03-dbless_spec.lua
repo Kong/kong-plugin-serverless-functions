@@ -8,6 +8,8 @@ if not strategies.off then
   describe = pending
 end
 
+for _, untrusted in ipairs({ "on", "sandbox" }) do
+
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
   describe("Plugin: " .. plugin_name .. " (dbless)", function()
@@ -15,8 +17,10 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
     setup(function()
       assert(helpers.start_kong({
+        untrusted_lua = untrusted,
         nginx_conf = "spec/fixtures/custom_nginx.template",
         database = "off",
+        plugins = "bundled,pre-function,post-function",
       }))
     end)
 
@@ -61,4 +65,5 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
     end)
   end)
 
+end
 end

@@ -4,19 +4,9 @@ return function(plugin_name)
   local Schema = require "kong.db.schema"
   local typedefs = require "kong.db.schema.typedefs"
 
-  local loadstring = loadstring
-
   local functions_deprecated = "[%s] 'config.functions' will be deprecated in favour of 'config.access'"
 
-
-  local function validate_function(fun)
-    local _, err = loadstring(fun)
-    if err then
-      return false, "error parsing " .. plugin_name .. ": " .. err
-    end
-
-    return true
-  end
+  local sandbox_helpers = require "kong.tools.sandbox_helpers"
 
 
   local phase_functions = Schema.define {
@@ -26,7 +16,8 @@ return function(plugin_name)
     elements = {
       type = "string",
       required = false,
-      custom_validator = validate_function,
+      -- Checks for valid lua, does not execute
+      custom_validator = sandbox_helpers.validate_safe,
     }
   }
 

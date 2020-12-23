@@ -66,6 +66,7 @@ describe("Plugin: serverless-functions", function()
 end)
 
 
+for _, untrusted in ipairs({ "on", "sandbox" }) do
 
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
@@ -181,7 +182,9 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
         }
 
         assert(helpers.start_kong({
+          untrusted_lua = untrusted,
           nginx_conf = "spec/fixtures/custom_nginx.template",
+          plugins = "bundled,pre-function,post-function",
         }))
       end)
 
@@ -354,4 +357,5 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       end)
     end)
   end
+end
 end

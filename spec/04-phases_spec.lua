@@ -14,12 +14,11 @@ local mock_one_fn = [[
     end
 ]]
 
+for _, untrusted in ipairs({ "on", "sandbox" }) do
 
 for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
 
-  -- This whole test is marked as pending because it relies on a side-effect (writing to a file)
-  -- which is no longer a possibility after sandboxing
-  pending("Plugin: " .. plugin_name, function()
+  describe("Plugin: " .. plugin_name, function()
 
     setup(function()
       local bp, db = helpers.get_db_utils()
@@ -52,7 +51,10 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       }
 
       assert(helpers.start_kong({
+        untrusted_lua = untrusted,
+        untrusted_lua_sandbox_requires = untrusted == "sandbox" and "pl.utils",
         nginx_conf = "spec/fixtures/custom_nginx.template",
+        plugins = "bundled,pre-function,post-function",
       }))
     end)
 
@@ -149,4 +151,6 @@ phase: 'log', index: 'third', plugin: 'pre-function'
 ]]):gsub("pre%-function", plugin_name),content)
     end)
   end)
+end
+
 end
