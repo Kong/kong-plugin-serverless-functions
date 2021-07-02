@@ -64,7 +64,7 @@ local config_cache do
   end
 
 
-  local phases = { "certificate", "rewrite", "access",
+  local phases = { "certificate", "rewrite", "access", "response",
                    "header_filter", "body_filter", "log",
                    "functions" } -- <-- this one being legacy
 
@@ -120,6 +120,10 @@ return function(priority)
 
   function ServerlessFunction:header_filter(config)
     config_cache[config].header_filter()
+  end
+
+  function ServerlessFunction:response(config)
+    config_cache[config].response()
   end
 
   function ServerlessFunction:body_filter(config)

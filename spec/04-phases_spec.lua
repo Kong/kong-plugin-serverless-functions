@@ -38,7 +38,7 @@ for _, plugin_name in ipairs({ "pre-function", "post-function" }) do
       }
 
       local config = {}
-      for _, phase in ipairs({ "certificate", "rewrite", "access",
+      for _, phase in ipairs({ "certificate", "rewrite", "access", "response",
                                "header_filter", "body_filter", "log"}) do
         config[phase] = {}
         for i, index in ipairs({"first", "second", "third"}) do
@@ -101,6 +101,9 @@ phase: 'body_filter', index: 'third', plugin: 'pre-function'
 phase: 'body_filter', index: 'first', plugin: 'pre-function'
 phase: 'body_filter', index: 'second', plugin: 'pre-function'
 phase: 'body_filter', index: 'third', plugin: 'pre-function'
+phase: 'response', index: 'first', plugin: 'pre-function'
+phase: 'response', index: 'second', plugin: 'pre-function'
+phase: 'response', index: 'third', plugin: 'pre-function'
 phase: 'log', index: 'first', plugin: 'pre-function'
 phase: 'log', index: 'second', plugin: 'pre-function'
 phase: 'log', index: 'third', plugin: 'pre-function'
@@ -122,6 +125,9 @@ phase: 'body_filter', index: 'third', plugin: 'pre-function'
 phase: 'body_filter', index: 'first', plugin: 'pre-function'
 phase: 'body_filter', index: 'second', plugin: 'pre-function'
 phase: 'body_filter', index: 'third', plugin: 'pre-function'
+phase: 'response', index: 'first', plugin: 'pre-function'
+phase: 'response', index: 'second', plugin: 'pre-function'
+phase: 'response', index: 'third', plugin: 'pre-function'
 phase: 'log', index: 'first', plugin: 'pre-function'
 phase: 'log', index: 'second', plugin: 'pre-function'
 phase: 'log', index: 'third', plugin: 'pre-function'
@@ -143,6 +149,9 @@ phase: 'body_filter', index: 'third', plugin: 'pre-function'
 phase: 'body_filter', index: 'first', plugin: 'pre-function'
 phase: 'body_filter', index: 'second', plugin: 'pre-function'
 phase: 'body_filter', index: 'third', plugin: 'pre-function'
+phase: 'response', index: 'first', plugin: 'pre-function'
+phase: 'response', index: 'second', plugin: 'pre-function'
+phase: 'response', index: 'third', plugin: 'pre-function'
 phase: 'log', index: 'first', plugin: 'pre-function'
 phase: 'log', index: 'second', plugin: 'pre-function'
 phase: 'log', index: 'third', plugin: 'pre-function'
